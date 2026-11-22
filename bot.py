@@ -2,6 +2,7 @@ import os
 import logging
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
+from telegram.request import HTTPXRequest
 from openai import OpenAI
 
 # ================= НАСТРОЙКИ =================
@@ -97,7 +98,14 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
 def main():
-    app = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
+    # Настройка таймаутов, чтобы бот не падал с ошибкой TimedOut на хостинге
+    request = HTTPXRequest(
+        connect_timeout=30.0,   # ждать соединения до 30 секунд
+        read_timeout=30.0,      # ждать ответа до 30 секунд
+        write_timeout=30.0,
+    )
+
+    app = ApplicationBuilder().token(TELEGRAM_TOKEN).request(request).build()
 
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
